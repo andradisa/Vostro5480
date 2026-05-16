@@ -1,0 +1,49 @@
+## TO DISABLE ONLY PHANTOM TOUCHES
+
+**Step 1.** Open the terminal (`Ctrl` + `Alt` + `T`) and run:
+
+    sudo nano /etc/udev/rules.d/99-disable-touchscreen.rules
+
+
+**Step 2.** Paste the following line exactly as it is below (already using the Vendor ID `04f3` and Product ID `2012` you identified):
+
+    SUBSYSTEM=="input", ATTRS{idVendor}=="04f3", ATTRS{idProduct}=="2012", ENV{ID_INPUT}="", ENV{ID_INPUT_TOUCHSCREEN}="", ENV{ID_INPUT_MOUSE}="", ENV{ID_INPUT_TABLET}="", ENV{LIBINPUT_IGNORE_DEVICE}="1"
+
+Save the file by pressing `Ctrl` + `O`, then `Enter`. Exit by pressing `Ctrl` + `X`.
+  
+
+**Step 3.** To apply the rule immediately without breaking anything, run:
+
+    sudo udevadm control --reload-rules && sudo udevadm trigger
+
+
+
+> [!NOTE]
+> If the screen doesn't stop responding immediately, simply restart your laptop one last time.
+
+
+
+
+## DISABLING THE TOUCHSCREEN COMPLETELY
+
+**Step 1.** Open the terminal (`Ctrl` + `Alt` + `T`) and open our rules file for editing:
+
+      
+    sudo nano /etc/udev/rules.d/99-disable-touchscreen.rules
+
+
+
+**Step 2.** Delete everything inside and replace it with this new command line (it intercepts the moment the driver tries to connect to the screen and forces it to unbind):
+
+
+    ACTION=="bind", SUBSYSTEM=="hid", ATTRS{idVendor}=="04f3", ATTRS{idProduct}=="2012", RUN+="/bin/sh -c 'echo -n %k > /sys/bus/hid/devices/%k/driver/unbind'"
+
+
+Save the file by pressing `Ctrl` + `O`, then `Enter`. Exit with `Ctrl` + `X`.
+  
+
+  
+**Step 3.** Restart the computer so Linux applies the block from boot:
+
+
+    sudo reboot
