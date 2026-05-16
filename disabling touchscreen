@@ -1,31 +1,40 @@
+
 ## TO DISABLE ONLY PHANTOM TOUCHES
 
 **Step 1.** Open the terminal (`Ctrl` + `Alt` + `T`) and run:
 
-    sudo nano /etc/udev/rules.d/99-disable-touchscreen.rules
+```bash
+sudo nano /etc/udev/rules.d/99-disable-touchscreen.rules
 
+```
 
 **Step 2.** Paste the following line exactly as it is below (already using the Vendor ID `04f3` and Product ID `2012` you identified):
 
-    SUBSYSTEM=="input", ATTRS{idVendor}=="04f3", ATTRS{idProduct}=="2012", ENV{ID_INPUT}="", ENV{ID_INPUT_TOUCHSCREEN}="", ENV{ID_INPUT_MOUSE}="", ENV{ID_INPUT_TABLET}="", ENV{LIBINPUT_IGNORE_DEVICE}="1"
+```text
+SUBSYSTEM=="input", ATTRS{idVendor}=="04f3", ATTRS{idProduct}=="2012", ENV{ID_INPUT}="", ENV{ID_INPUT_TOUCHSCREEN}="", ENV{ID_INPUT_MOUSE}="", ENV{ID_INPUT_TABLET}="", ENV{LIBINPUT_IGNORE_DEVICE}="1"
+
+```
 
 Save the file by pressing `Ctrl` + `O`, then `Enter`. Exit by pressing `Ctrl` + `X`.
-  
 
 **Step 3.** To apply the rule immediately without breaking anything, run:
 
-    sudo udevadm control --reload-rules && sudo udevadm trigger
+```bash
+sudo udevadm control --reload-rules && sudo udevadm trigger
 
-
+```
 
 > [!NOTE]
 > If the screen doesn't stop responding immediately, simply restart your laptop one last time.
 
+```
 
+```
 
 
 ## DISABLING THE TOUCHSCREEN COMPLETELY
 
+```markdown
 
 
 ### Step 1: Clean Up Previous Steps
@@ -34,9 +43,10 @@ To avoid leaving conflicting rules in the system, let's delete the old file:
 1. Open the terminal (`Ctrl` + `Alt` + `T`).
 2. Delete the previous rule:
 
+```bash
+sudo rm /etc/udev/rules.d/99-disable-touchscreen.rules
 
-        sudo rm /etc/udev/rules.d/99-disable-touchscreen.rules
-
+```
 
 ### Step 2: Create the Disabling Script
 
@@ -44,14 +54,16 @@ We'll create a script that scans the system's hardware devices, finds your Elan 
 
 1. In the terminal, create the script file:
 
+```bash
+sudo nano /usr/local/bin/disable-touchscreen.sh
 
-        sudo nano /usr/local/bin/disable-touchscreen.sh
+```
 
 2. Copy and paste the code below exactly as it is:
 
-
-        #!/bin/bash
-        # Searches for the Elan screen hardware in the system's HID bus
+```bash
+#!/bin/bash
+# Searches for the Elan screen hardware in the system's HID bus
 for dev in /sys/bus/hid/devices/*04[fF]3:2012*; do
     if [ -d "$dev/driver" ]; then
         # Forces the current driver to unbind from the component
@@ -59,24 +71,26 @@ for dev in /sys/bus/hid/devices/*04[fF]3:2012*; do
     fi
 done
 
+```
 
 3. Save by pressing `Ctrl` + `O`, then `Enter`. Exit with `Ctrl` + `X`.
 4. Give execution permission for this script to work:
 
+```bash
+sudo chmod +x /usr/local/bin/disable-touchscreen.sh
 
-        sudo chmod +x /usr/local/bin/disable-touchscreen.sh
-
-
+```
 
 ### Step 3: Automate It to Run on Every Boot
 
-
+Now we'll tell Zorin OS to run this script invisibly every time you start your laptop.
 
 1. In the terminal, create the system service file:
 
+```bash
+sudo nano /etc/systemd/system/disable-touchscreen.service
 
-        sudo nano /etc/systemd/system/disable-touchscreen.service
-
+```
 
 2. Paste the following configuration block inside it:
 
@@ -109,4 +123,8 @@ sudo systemctl start disable-touchscreen.service
 ```
 
 > [!TIP]
-> When you run the last command (`start`), the script will execute immediately. No need to reboot
+> When you run the last command (`start`), the script will execute immediately. No need to reboot.
+
+```
+
+```
