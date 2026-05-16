@@ -26,24 +26,87 @@ Save the file by pressing `Ctrl` + `O`, then `Enter`. Exit by pressing `Ctrl` + 
 
 ## DISABLING THE TOUCHSCREEN COMPLETELY
 
-**Step 1.** Open the terminal (`Ctrl` + `Alt` + `T`) and open our rules file for editing:
-
-      
-    sudo nano /etc/udev/rules.d/99-disable-touchscreen.rules
 
 
+### Step 1: Clean Up Previous Steps
+To avoid leaving conflicting rules in the system, let's delete the old file:
 
-**Step 2.** Delete everything inside and replace it with this new command line (it intercepts the moment the driver tries to connect to the screen and forces it to unbind):
-
-
-    ACTION=="bind", SUBSYSTEM=="hid", ATTRS{idVendor}=="04f3", ATTRS{idProduct}=="2012", RUN+="/bin/sh -c 'echo -n %k > /sys/bus/hid/devices/%k/driver/unbind'"
-
-
-Save the file by pressing `Ctrl` + `O`, then `Enter`. Exit with `Ctrl` + `X`.
-  
-
-  
-**Step 3.** Restart the computer so Linux applies the block from boot:
+1. Open the terminal (`Ctrl` + `Alt` + `T`).
+2. Delete the previous rule:
 
 
-    sudo reboot
+        sudo rm /etc/udev/rules.d/99-disable-touchscreen.rules
+
+
+### Step 2: Create the Disabling Script
+
+We'll create a script that scans the system's hardware devices, finds your Elan screen's ID (`04f3:2012`), and tells its driver to "release" the component.
+
+1. In the terminal, create the script file:
+
+
+        sudo nano /usr/local/bin/disable-touchscreen.sh
+
+2. Copy and paste the code below exactly as it is:
+
+
+        #!/bin/bash
+        # Searches for the Elan screen hardware in the system's HID bus
+for dev in /sys/bus/hid/devices/*04[fF]3:2012*; do
+    if [ -d "$dev/driver" ]; then
+        # Forces the current driver to unbind from the component
+        echo "$(basename "$dev")" > "$dev/driver/unbind"
+    fi
+done
+
+
+3. Save by pressing `Ctrl` + `O`, then `Enter`. Exit with `Ctrl` + `X`.
+4. Give execution permission for this script to work:
+
+
+        sudo chmod +x /usr/local/bin/disable-touchscreen.sh
+
+
+
+### Step 3: Automate It to Run on Every Boot
+
+
+
+1. In the terminal, create the system service file:
+
+
+        sudo nano /etc/systemd/system/disable-touchscreen.service
+
+
+2. Paste the following configuration block inside it:
+
+```ini
+[Unit]
+Description=Permanently Disable Touchscreen (Without breaking USB/Bluetooth)
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/disable-touchscreen.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+3. Save by pressing `Ctrl` + `O`, then `Enter`. Exit with `Ctrl` + `X`.
+
+### Step 4: Enable the Service
+
+Now just register and activate the new command in the system with these three final steps in the terminal:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable disable-touchscreen.service
+sudo systemctl start disable-touchscreen.service
+
+```
+
+> [!TIP]
+> When you run the last command (`start`), the script will execute immediately. No need to reboot
